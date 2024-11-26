@@ -6,7 +6,7 @@ import threading
 from pynput import keyboard
 import pyautogui
 
-have_highdpi = False
+have_highdpi = True
 double_click = True
 
 def solution_valid_for_paving(paving, solution):
@@ -80,18 +80,29 @@ def extract_cells(grid):
 	_, binary = cv2.threshold(gray, 10, 255, cv2.THRESH_BINARY_INV)
 	contours, _ = cv2.findContours(binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
+	grid = cv2.cvtColor(grid, cv2.COLOR_BGRA2BGR)
+	contours_image = grid.copy()
+	cv2.drawContours(contours_image, contours, -1, (0, 255, 0, 255), 3)
+	cv2.imwrite("original.png", grid)
+	cv2.imwrite("blurred.png", blurred)
+	cv2.imwrite("binary.png", binary)
+	cv2.imwrite("contours.png", contours_image)
 	# find all squares in the image
 	squares = []
 	for contour in contours:
 		epsilon = 0.05 * cv2.arcLength(contour, True)
 		approx = cv2.approxPolyDP(contour, epsilon, True)
 
-		if len(approx) == 4 and cv2.contourArea(approx) > 100:
+		print(len(approx))
+		if len(approx) == 4:
+			print(cv2.contourArea(approx))
+		if len(approx) == 4 and cv2.contourArea(approx) > 50:
 			x, y, w, h = cv2.boundingRect(approx)
 			aspect_ratio = float(w) / h
 			if 0.9 <= aspect_ratio <= 1.1:  # Square aspect ratio
 				squares.append((x, y, w, h))
 
+	print(f"Found {len(squares)} squares")
 	# Filter squares based on area
 	if len(squares) > 0:
 		areas = [w * h for _, _, w, h in squares]

@@ -6,6 +6,9 @@ import threading
 from pynput import keyboard
 import pyautogui
 
+have_highdpi = False
+double_click = True
+
 def solution_valid_for_paving(paving, solution):
 	queens_color = [paving[queen_x, queen_y] for queen_x, queen_y in enumerate(solution)]
 	if len(set(queens_color)) != len(queens_color):
@@ -74,7 +77,7 @@ def align_squares(squares, tolerance=10):
 def extract_cells(grid):
 	gray = cv2.cvtColor(grid, cv2.COLOR_BGR2GRAY)
 	blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-	_, binary = cv2.threshold(blurred, 150, 255, cv2.THRESH_BINARY_INV)
+	_, binary = cv2.threshold(gray, 10, 255, cv2.THRESH_BINARY_INV)
 	contours, _ = cv2.findContours(binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
 	# find all squares in the image
@@ -134,7 +137,7 @@ def extract_colors(grid, squares):
 		avg_color = cv2.mean(center_region)[:3]
 		matched = False
 		for idx, ref_color in enumerate(colors_detected):
-			if np.linalg.norm(np.array(avg_color) - np.array(ref_color)) < 10:
+			if np.linalg.norm(np.array(avg_color) - np.array(ref_color)) < 1:
 				color_map[idx].append((square_idx, (x, y, w, h)))
 				matched = True
 				break
@@ -169,16 +172,25 @@ def extract_grid(grid_image):
 
 def click_mouse(x, y):
 	pyautogui.click(x, y, _pause=False, interval=0)
-	pyautogui.click(x, y, _pause=False, interval=0)
+	# pyautogui.click(x, y, _pause=False, interval=0)
 	# pyautogui.click(x, y)
 
 def solve_puzzle(offset_x, offset_y, cells, grid):
+	global have_highdpi
+	global double_click
+
 	solution = solve(grid)
 	for i in range(len(solution)):
 		index = i * len(solution) + solution[i]
 		x, y, w, h = cells[index]
-		# click_mouse(offset_x + x + 10, offset_y + y + 10)
-		click_mouse(offset_x + x // 2 + 10, offset_y + y // 2 + 10)
+		if have_highdpi:
+			click_mouse(offset_x + x // 2 + 10, offset_y + y // 2 + 10)
+			if double_click:
+				click_mouse(offset_x + x // 2 + 10, offset_y + y // 2 + 10)
+		else:
+			click_mouse(offset_x + x + 10, offset_y + y + 10)
+			if double_click:
+				click_mouse(offset_x + x + 10, offset_y + y + 10)
 
 stop_flag = False
 capture_flag = False
@@ -205,6 +217,7 @@ def keyboard_listener():
 def main():
 	global stop_flag
 	global capture_flag
+	global have_highdpi
 
 	listener_thread = threading.Thread(target=keyboard_listener)
 	listener_thread.start()
@@ -221,8 +234,11 @@ def main():
 					if grid is not None:
 						print(x,y)
 						if x == last_x and y == last_y:
-							solve_puzzle(x//2, y//2, cells, grid)
-							# solve_puzzle(x, y, cells, grid)
+							if have_highdpi:
+								solve_puzzle(x//2, y//2, cells, grid)
+							else:
+								solve_puzzle(x, y, cells, grid)
+								
 							capture_flag = False
 				last_x, last_y = x, y
 			cv2.waitKey(1)

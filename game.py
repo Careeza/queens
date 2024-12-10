@@ -12,8 +12,6 @@ class Game:
         self.screen = pg.display.set_mode((self.width, self.height))
         
         self.shape_game = game_shape
-        
-        
         self.running = False
         
     def start(self):
@@ -22,14 +20,10 @@ class Game:
         
         while self.running:
             self.interact()
-            pg.display.flip()
-        
         
     def new_board(self):
         self.create_board_matrix()
         self.board = Board(self, self.board_matrix)
-        self.board.init_display()
-        
         
     def victory(self):
         self.running = False
@@ -73,3 +67,9 @@ class Game:
                     self.new_board()
                 elif event.key == pg.K_w:
                     print(self.board.victory(debug=True))
+                elif event.key == pg.K_o:
+                    self.board.create_grid()
+                    self.board.update_screen()
+                elif event.key == pg.K_p:
+                    self.board.display()
+                    self.board.update_screen()
